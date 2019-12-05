@@ -17,7 +17,7 @@ using namespace std;
 #define boundaryT (460*sqrt(3)+20)
 #define boundaryB (100*sqrt(3)-20)
 
-#define radius 30
+#define radius 20
 #define PI 3.141492
 #define RadianConstant (180/PI)
 Light light(600, 1000, 300, GL_LIGHT0);
@@ -28,79 +28,128 @@ CollisionHandling colHandler;
 Shoot shoot;
 
 float angle = PI/2 ;
-vector<int> arr;
 
 
 void init() {
 	srand((unsigned int)time(0));
+
 	light.setAmbient(0.5, 0.5, 0.5, 1.0);
 	light.setDiffuse(0.7, 0.7, 0.7, 1.0);
 	light.setSpecular(1.0, 1.0, 1.0, 1.0);
 
-	// 화살표랑 넥스트 공 채우기
 	spheres.push_back(new SolidSphere());
 	spheres.push_back(new SolidSphere());
 	spheres.push_back(new SolidSphere());
 	spheres[0]->setCenter(2200, 200, 0);
 	spheres[1]->setCenter(300, 200, 0);
-	arr.push_back(0);
+
+	SolidSphere*** exMatrix = new SolidSphere**[15];
+	for (int y = 0; y < 15; ++y) {
+		exMatrix[y] = new SolidSphere * [15];
+	}
+	for (int y = 0; y < 15; ++y) {
+		for (int x = 0; x < 15; ++x) {
+			exMatrix = nullptr;
+		}
+	}
 }
+void game_starter() {
+
+}
+
+
 
 // 같은공 드랍 함수
 
-void  dropsame(SolidSphere& sph)
-{
-	CollisionDetection samecollision;
-	for (int i = 0; i < spheres.size() - 3; i++) {
-		
-		if (samecollision(sph, *spheres[i]) && sph.getColor() == spheres[i]->getColor() && arr.back() != i) {
-			arr.push_back(i);
+//sph1이 기준 공임
+//bool judgenear(SolidSphere sph1, SolidSphere sph2) {
+//	if (sph1.getxy(1) % 2 == 1) {
+//		if (abs(sph1.getxy(1) - sph2.getxy(1)) == 0) {
+//			if (abs(sph1.getxy(0) - sph2.getxy(0)) == 1) {
+//				return 1;
+//			}
+//			else return 0;
+//		}
+//		else if (abs(sph1.getxy(1) - sph2.getxy(1)) == 1) {
+//			if ((sph1.getxy(0) - sph2.getxy(0) == 0) || (sph1.getxy(0) - sph2.getxy(0) == -1)) {
+//				return 1;
+//			}
+//			else return 0;
+//		}
+//		else return 0;
+//	}
+//	else {
+//		if (abs(sph1.getxy(1) - sph2.getxy(1)) == 0) {
+//			if (abs(sph1.getxy(0) - sph2.getxy(0)) == 1) {
+//				return 1;
+//			}
+//			else return 0;
+//		}
+//		else if (abs(sph1.getxy(1) - sph2.getxy(1)) == 1) {
+//			if ((sph1.getxy(0) - sph2.getxy(0) == 0) || (sph1.getxy(0) - sph2.getxy(0) == 1)) {
+//				return 1;
+//			}
+//			else return 0;
+//		}
+//		else return 0;
+//	}
+//}
 
-			dropsame(*spheres[i]);
+void  dropsame(SolidSphere& sph){
+	for (int i = 0; i < spheres.size() - 3; i++) {
+		CollisionDetection judge;
+		if (judge(sph, *spheres[i]) && sph.getColor() == spheres[i]->getColor()) {
+			sph.setdrop();
+			spheres[i]->setdrop();
 		}
 		else {}
-			
-		
 	}
-
 }
-
+//void  dropsame(SolidSphere& sph) {
+//
+//}
 
 
 void idle() {
-	//공끼리 충돌 
-	for (int i = 0; i < spheres.size() - 3; i++)
+	
+	//ball collision
+	for (int i = 0; i < spheres.size() - 3; i++) 
 		colHandler(*spheres[i], *spheres[spheres.size() - 3]);
-	//천장 충돌 
+	
+	
+	for (int i = 0; i < spheres.size() - 2; i++) {
+		if (spheres[i]->getdrop()) {
+			spheres[i]->setVelocity(0, -20, -10);
+			spheres[i]->move();
+			if (spheres[i]->getCenter()[1] < 0) {
+				spheres[i]->setVelocity(0, 0, 0);
+				vector<SolidSphere*>::iterator iter = spheres.begin();
+				spheres.erase(iter+i);
+			}
+		}
+	}
 
+	//천장 충돌 
 	colHandler(*spheres[spheres.size() - 3]);
 
-	//좌우 충돌
+	//side collision
 	if (spheres[spheres.size() - 3]->getCenter()[0] + spheres[spheres.size() - 3]->getRadius() >= boundaryR ||
 		spheres[spheres.size() - 3]->getCenter()[0] - spheres[spheres.size() - 3]->getRadius() <= boundaryL)
 		spheres[spheres.size() - 3]->setVelocity(-spheres[spheres.size() - 3]->getVelocity()[0], spheres[spheres.size() - 3]->getVelocity()[1], spheres[spheres.size() - 3]->getVelocity()[2]);
-
 	
-	
-	
-	// 같은공 드랍
+	// remove
 	dropsame(*spheres[spheres.size() - 3]);
 
-	for (int i = 0; i < arr.size() - 1; i++)
-		spheres[arr[i]]->setVelocity(0, -20, -10);
+	
+	spheres[spheres.size() - 3]->move();
 
-
-	for (int i = 0; i < spheres.size() - 1; i++)
-		spheres[i]->move();
-
-
-
-	// 주위가 빈 공 드랍
+	
+	// drop
 
 	
 	
 	glutPostRedisplay();
-	// 게임오버
+	// game over
 	
 
 }
@@ -120,11 +169,11 @@ void renderScene() {
 	glEnable(GL_LIGHT0);
 	light.draw();
 
-	//for (auto sph : spheres)
-	//	sph.draw();
+	
 	for (int i = 0; i < spheres.size(); ++i) {
 		spheres[i]->draw();
 	}
+
 	shoot.drawStick(angle*RadianConstant);
 
 	glDisable(GL_DEPTH_TEST);
@@ -144,13 +193,13 @@ void keyboard(unsigned char key, int x, int y) {
 			spheres[spheres.size() - 2]->setCenter(300, 200, 0);
 		}
 		break;
+
 	case ('a'):
 		angle = angle + 0.05;
-		cout << angle << endl;
 		break;
+
 	case ('d'):
 		angle = angle - 0.05;
-		cout << angle << endl;
 		break;
 	default:
 		break;

@@ -8,6 +8,7 @@ SolidSphere::SolidSphere() {
 	int RanColor = rand() % 4 + 1;
 	setColor(static_cast<Color> (RanColor));
 	setMTL();
+	drop = 0;
 }
 SolidSphere::SolidSphere(float r, int sl, int st) {
 	properties.setXYZ(r, sl, st);
@@ -101,4 +102,11 @@ Color SolidSphere::getColor() {
 };
 float SolidSphere::getRadius() const {
 	return properties[0];
+}
+
+void  SolidSphere::setdrop() {
+	drop = 1;
+};
+int SolidSphere::getdrop() {
+	return drop;
 }
